@@ -5,19 +5,26 @@ import string
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
-# ✅ Safe NLTK download logic for Streamlit Cloud
+
+import os
+
+# Explicit path to download inside home directory (not tmp)
+NLTK_DATA_PATH = os.path.join(os.path.expanduser("~"), "nltk_data")
+nltk.data.path.append(NLTK_DATA_PATH)
+
 def download_nltk_resources():
     try:
         nltk.data.find("tokenizers/punkt")
     except LookupError:
-        nltk.download("punkt")
+        nltk.download("punkt", download_dir=NLTK_DATA_PATH)
 
     try:
         nltk.data.find("corpora/stopwords")
     except LookupError:
-        nltk.download("stopwords")
+        nltk.download("stopwords", download_dir=NLTK_DATA_PATH)
 
 download_nltk_resources()
+
 
 # ---------------------- Load Model and Vectorizer ------------------------
 try:
@@ -99,3 +106,4 @@ if st.button("Predict"):
             st.error(f"🚨 This is **SPAM**! ({prob*100:.2f}% confidence)")
         else:
             st.success(f"✅ This is **Not Spam**. ({prob*100:.2f}% confidence)")
+
