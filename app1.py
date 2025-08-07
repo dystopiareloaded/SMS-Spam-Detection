@@ -5,26 +5,26 @@ import string
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
+# ✅ Safe NLTK download logic for Streamlit Cloud
+def download_nltk_resources():
+    try:
+        nltk.data.find("tokenizers/punkt")
+    except LookupError:
+        nltk.download("punkt")
 
+    try:
+        nltk.data.find("corpora/stopwords")
+    except LookupError:
+        nltk.download("stopwords")
 
-# --- Robust NLTK resource check ---
-def ensure_nltk_resources():
-    resources = ["punkt", "stopwords"]
-    for resource in resources:
-        try:
-            nltk.data.find(f"tokenizers/{resource}" if resource == "punkt" else f"corpora/{resource}")
-        except LookupError:
-            nltk.download(resource)
+download_nltk_resources()
 
-ensure_nltk_resources()
-
-
-# Load the vectorizer and model
+# ---------------------- Load Model and Vectorizer ------------------------
 try:
-    with open("./vectorizer.pkl", "rb") as f:
+    with open("vectorizer.pkl", "rb") as f:
         vectorizer = pickle.load(f)
     
-    with open("./model.pkl", "rb") as f:
+    with open("model.pkl", "rb") as f:
         model = pickle.load(f)
 except Exception as e:
     st.error(f"Error loading model files: {e}")
@@ -32,42 +32,16 @@ except Exception as e:
 
 ps = PorterStemmer()
 
-
+# ---------------------- Text Transformation Function ---------------------
 def transform_text(text):
-    # Step 1: Lowercase the text
     text = text.lower()
-    
-    # Step 2: Tokenize
     tokens = nltk.word_tokenize(text)
+    cleaned_tokens = [word for word in tokens if word.isalnum()]
+    filtered_tokens = [word for word in cleaned_tokens if word not in stopwords.words('english') and word not in string.punctuation]
+    stemmed_tokens = [ps.stem(word) for word in filtered_tokens]
+    return " ".join(stemmed_tokens)
 
-    # Step 3: Keep only alphanumeric tokens
-    cleaned_tokens = []
-    for word in tokens:
-        if word.isalnum():
-            cleaned_tokens.append(word)
-
-    # Step 4: Remove stopwords and punctuation
-    filtered_tokens = []
-    for word in cleaned_tokens:
-        if word not in stopwords.words('english') and word not in string.punctuation:
-            filtered_tokens.append(word)
-
-    # Step 5: Apply stemming
-    stemmed_tokens = []
-    for word in filtered_tokens:
-        stemmed_tokens.append(ps.stem(word))
-
-    # Step 6: Join tokens back to a string
-    final_text = " ".join(stemmed_tokens)
-    
-    return final_text
-
-
-
-
-
-# ------------------------- Streamlit App -------------------------
-
+# ---------------------- Streamlit App UI ---------------------------------
 st.set_page_config(page_title="SMS Spam Detection", page_icon="📩", layout="centered")
 
 # Custom CSS and creator credit
@@ -125,7 +99,3 @@ if st.button("Predict"):
             st.error(f"🚨 This is **SPAM**! ({prob*100:.2f}% confidence)")
         else:
             st.success(f"✅ This is **Not Spam**. ({prob*100:.2f}% confidence)")
-
-
-
-
