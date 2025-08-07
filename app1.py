@@ -5,9 +5,19 @@ import string
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
-# Download NLTK data
-nltk.download('punkt')
-nltk.download('stopwords')
+
+
+# --- Robust NLTK resource check ---
+def ensure_nltk_resources():
+    resources = ["punkt", "stopwords"]
+    for resource in resources:
+        try:
+            nltk.data.find(f"tokenizers/{resource}" if resource == "punkt" else f"corpora/{resource}")
+        except LookupError:
+            nltk.download(resource)
+
+ensure_nltk_resources()
+
 
 # Load the vectorizer and model
 try:
@@ -115,6 +125,7 @@ if st.button("Predict"):
             st.error(f"🚨 This is **SPAM**! ({prob*100:.2f}% confidence)")
         else:
             st.success(f"✅ This is **Not Spam**. ({prob*100:.2f}% confidence)")
+
 
 
 
