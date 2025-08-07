@@ -2,29 +2,19 @@ import streamlit as st
 import pickle
 import nltk
 import string
+import os
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+from nltk.tokenize import RegexpTokenizer
 
-
-import os
-
-# Explicit path to download inside home directory (not tmp)
-NLTK_DATA_PATH = os.path.join(os.path.expanduser("~"), "nltk_data")
-nltk.data.path.append(NLTK_DATA_PATH)
-
+# ---------------------- Download NLTK stopwords only ----------------------
 def download_nltk_resources():
-    try:
-        nltk.data.find("tokenizers/punkt")
-    except LookupError:
-        nltk.download("punkt", download_dir=NLTK_DATA_PATH)
-
     try:
         nltk.data.find("corpora/stopwords")
     except LookupError:
-        nltk.download("stopwords", download_dir=NLTK_DATA_PATH)
+        nltk.download("stopwords")
 
 download_nltk_resources()
-
 
 # ---------------------- Load Model and Vectorizer ------------------------
 try:
@@ -42,10 +32,17 @@ ps = PorterStemmer()
 # ---------------------- Text Transformation Function ---------------------
 def transform_text(text):
     text = text.lower()
-    tokens = nltk.word_tokenize(text)
-    cleaned_tokens = [word for word in tokens if word.isalnum()]
-    filtered_tokens = [word for word in cleaned_tokens if word not in stopwords.words('english') and word not in string.punctuation]
+
+    # Use RegexpTokenizer instead of word_tokenize
+    tokenizer = RegexpTokenizer(r'\w+')
+    tokens = tokenizer.tokenize(text)
+
+    # Remove stopwords
+    filtered_tokens = [word for word in tokens if word not in stopwords.words('english') and word not in string.punctuation]
+
+    # Apply stemming
     stemmed_tokens = [ps.stem(word) for word in filtered_tokens]
+
     return " ".join(stemmed_tokens)
 
 # ---------------------- Streamlit App UI ---------------------------------
@@ -106,4 +103,3 @@ if st.button("Predict"):
             st.error(f"🚨 This is **SPAM**! ({prob*100:.2f}% confidence)")
         else:
             st.success(f"✅ This is **Not Spam**. ({prob*100:.2f}% confidence)")
-
